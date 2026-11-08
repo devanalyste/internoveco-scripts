@@ -1,10 +1,58 @@
-/* Campus Internoveco — script du quiz v1.2.2 (2 nov. 2026), copie lisible.
-   En ligne : https://cdn.prod.website-files.com/61420ff5080b9e0dc94676a9/6ae886cbb8667695289b9f29_quiz-campus-1.2.2.js
-   SRI : sha384-Xb51VTfyf6U434d6/J0zGM2QG8wv6928rh8PaagFv+HGkUpcQa8jD+C334c0L3Da
-   Appliqué : page gabarit « Exercices Template » (691bc191cb1e542c7478bd19), pied de page, script enregistré « quizcampus ».
+/* Campus Internoveco — script du quiz v1.2.3 (8 nov. 2026), copie lisible.
+   En ligne : servi par jsDelivr depuis ce dépôt (tag de version), ligne <script> dans le pied de page
+   de la page gabarit « Exercices Template » (691bc191cb1e542c7478bd19).
+   Changements depuis 1.2.2 (sondages) : les pourcentages s'affichent une seule fois, après la réponse
+   du registre des statistiques (« … » pendant l'attente, puis fondu) ; si le registre ne répond pas
+   en 3 secondes, on affiche les pourcentages de départ du CMS ; note « Basé sur les réponses des
+   participants », avec le nombre de personnes seulement à partir de 20 (__ivcSondage).
+   Historique 1.2.2 (2 nov. 2026) :
    Changements depuis 1.2.1 : __ivcCourt (libellés de la liste finale, repli sur le titre de groupe, texte raccourci à 140 caractères)
    et __ivcContexte (mise en situation affichée une fois dans une suite de cartes du même groupe, lien « Relire la mise en situation »). */
 /* Campus Internoveco - quiz v1.2.2 (2 nov. 2026) : libellés de la liste finale + mise en situation affichée une fois */
+/* Sondages (1.2.3) : réglages et affichage des pourcentages */
+const __ivcSondage = {
+  delaiRepli: 3000, // ms avant d'afficher les pourcentages de départ du CMS
+  seuilNombre: 20, // le nombre de personnes s'affiche à partir de ce seuil
+  // Pastille de pourcentage (créée vide, largeur fixe pour éviter que la boîte change de taille)
+  pastille(option) {
+    let t = option.querySelector(".answer-sondage-pct");
+    t ||
+      ((t = document.createElement("span")),
+      (t.className = "answer-sondage-pct"),
+      Object.assign(t.style, {
+        marginLeft: "auto",
+        paddingLeft: "12px",
+        minWidth: "4.2em",
+        textAlign: "right",
+        fontWeight: "600",
+        color: "#fbbb2e",
+        whiteSpace: "nowrap",
+        transition: "opacity .45s ease",
+      }),
+      option.appendChild(t));
+    return t;
+  },
+  // Montre une valeur en fondu
+  montrer(t, texte) {
+    t.style.opacity = "0";
+    t.textContent = texte;
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => (t.style.opacity = "1"))
+    );
+  },
+  // Repli : pourcentages de départ du CMS (gardés dans data-cms)
+  afficherCms(carte) {
+    carte.querySelectorAll(".answer-sondage-pct[data-cms]").forEach((t) =>
+      __ivcSondage.montrer(t, t.dataset.cms + " %")
+    );
+  },
+  note(n) {
+    return (
+      "Basé sur les réponses des participants" +
+      (n >= __ivcSondage.seuilNombre ? " (" + n + " personnes)." : ".")
+    );
+  },
+};
 function __ivcCourt(t) {
   t = (t || "").replace(/\s+/g, " ").trim();
   if (t.length <= 140) return t;
@@ -141,7 +189,19 @@ const __quizInit = function () {
           o && n < t.length && !Number.isNaN(t[n]) && (r.priors[o] = t[n]);
         }));
     }
+    const sondage = null === o;
+    let fini = !1,
+      repli = null;
+    sondage &&
+      (repli = setTimeout(() => {
+        fini || ((fini = !0), __ivcSondage.afficherCms(e));
+      }, __ivcSondage.delaiRepli));
     const a = await b("/answer", r);
+    if (sondage) {
+      if (fini) return; // le repli est déjà affiché : on ne change plus rien
+      (fini = !0), clearTimeout(repli);
+      if (!a || !a.enough) return void __ivcSondage.afficherCms(e);
+    }
     a &&
       a.enough &&
       (function (e, t, n, o) {
@@ -149,23 +209,8 @@ const __quizInit = function () {
         r.forEach((e) => {
           const n = e.getAttribute("data-answer-id"),
             r = t && void 0 !== t[n] ? t[n] : 0;
-          if (o) {
-            let t = e.querySelector(".answer-sondage-pct");
-            return (
-              t ||
-                ((t = document.createElement("span")),
-                (t.className = "answer-sondage-pct"),
-                Object.assign(t.style, {
-                  marginLeft: "auto",
-                  paddingLeft: "12px",
-                  fontWeight: "600",
-                  color: "#fbbb2e",
-                  whiteSpace: "nowrap",
-                }),
-                e.appendChild(t)),
-              void (t.textContent = r + " %")
-            );
-          }
+          if (o)
+            return void __ivcSondage.montrer(__ivcSondage.pastille(e), r + " %");
           let a = e.querySelector(".answer-stat-pct");
           a ||
             ((a = document.createElement("span")),
@@ -186,10 +231,11 @@ const __quizInit = function () {
         if (a && !e.querySelector(".quiz-stats-note")) {
           const e = document.createElement("div");
           (e.className = "quiz-stats-note"),
-            (e.textContent =
-              "Pourcentage des participants ayant choisi chaque réponse (" +
-              n +
-              " personnes)."),
+            (e.textContent = o
+              ? __ivcSondage.note(n)
+              : "Pourcentage des participants ayant choisi chaque réponse (" +
+                n +
+                " personnes)."),
             Object.assign(e.style, {
               color: "#8a8a8a",
               fontSize: "12px",
@@ -558,20 +604,10 @@ const __quizInit = function () {
                               : (e.style.opacity = "0.6"),
                             o.length > 0 && n < o.length && !Number.isNaN(o[n]))
                           ) {
-                            let t = e.querySelector(".answer-sondage-pct");
-                            t ||
-                              ((t = document.createElement("span")),
-                              (t.className = "answer-sondage-pct"),
-                              Object.assign(t.style, {
-                                marginLeft: "auto",
-                                paddingLeft: "12px",
-                                fontWeight: "600",
-                                color: "#fbbb2e",
-                                whiteSpace: "nowrap",
-                              }),
-                              e.appendChild(t)),
-                              (t.textContent =
-                                String(o[n]).replace(".", ",") + " %");
+                            const t = __ivcSondage.pastille(e);
+                            (t.dataset.cms = String(o[n]).replace(".", ",")),
+                              (t.style.opacity = "0.45"),
+                              (t.textContent = "…");
                           }
                         });
                       })(t, y(s)),
