@@ -1,4 +1,8 @@
-/* Campus Internoveco — script du quiz v1.2.3 (8 nov. 2026), copie lisible.
+/* Campus Internoveco — script du quiz v1.2.4 (8 nov. 2026), copie lisible.
+   Changement depuis 1.2.3 : quand le navigateur ressort la page d'exercice de sa mémoire
+   (flèche Retour, retour dans l'onglet), la page s'actualise à l'arrivée et le quiz repart
+   à neuf, comme l'annonce la fenêtre « Quitter » (aucune progression sauvegardée).
+   Historique 1.2.3 (8 nov. 2026) :
    En ligne : servi par jsDelivr depuis ce dépôt (tag de version), ligne <script> dans le pied de page
    de la page gabarit « Exercices Template » (691bc191cb1e542c7478bd19).
    Changements depuis 1.2.2 (sondages) : les pourcentages s'affichent une seule fois, après la réponse
@@ -9,6 +13,10 @@
    Changements depuis 1.2.1 : __ivcCourt (libellés de la liste finale, repli sur le titre de groupe, texte raccourci à 140 caractères)
    et __ivcContexte (mise en situation affichée une fois dans une suite de cartes du même groupe, lien « Relire la mise en situation »). */
 /* Campus Internoveco - quiz v1.2.2 (2 nov. 2026) : libellés de la liste finale + mise en situation affichée une fois */
+/* 1.2.4 : page ressortie de la mémoire du navigateur → actualisation pour repartir à neuf */
+window.addEventListener("pageshow", function (e) {
+  e.persisted && location.reload();
+});
 /* Sondages (1.2.3) : réglages et affichage des pourcentages */
 const __ivcSondage = {
   delaiRepli: 3000, // ms avant d'afficher les pourcentages de départ du CMS
